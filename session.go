@@ -7,7 +7,7 @@ import (
 
 type object struct {
 	data    interface{}
-	timeout time.Timer
+	timeout *time.Timer
 }
 
 func (o *object) run(s *Session, name string) {
@@ -17,7 +17,7 @@ func (o *object) run(s *Session, name string) {
 		defer s.mu.Unlock()
 		ob, ok := s.cache[name]
 		if ok && ob == o {
-			delete(s.cache[name])
+			delete(s.cache, name)
 		}
 	}
 }
@@ -37,8 +37,8 @@ func New(timeout time.Duration) *Session {
 }
 
 func (s *Session) Set(name string, data interface{}) {
-	mu.Lock()
-	defer mu.Unlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	if o, ok := s.cache[name]; ok {
 		o.timeout.Stop()
 	}
@@ -46,7 +46,7 @@ func (s *Session) Set(name string, data interface{}) {
 		data:    data,
 		timeout: time.NewTimer(s.timeout),
 	}
-	go o.run(s)
+	go o.run(s, name)
 }
 
 func (s *Session) Get(name string) interface{} {
@@ -56,7 +56,7 @@ func (s *Session) Get(name string) interface{} {
 	if !ok {
 		return nil
 	}
-	o.timeout.Reset(o.duration)
+	o.timeout.Reset(s.timeout)
 	return o.data
 }
 
