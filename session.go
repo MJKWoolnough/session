@@ -22,6 +22,10 @@ func (o *object) run(s *Session, name string) {
 	}
 }
 
+// Session stores data.
+//
+// The data will be removed from storage after a timeout has expired.
+// The timeout is reset if the data is read from storage.
 type Session struct {
 	timeout time.Duration
 
@@ -29,6 +33,7 @@ type Session struct {
 	cache map[string]*object
 }
 
+// New creates a new session with the given timeout
 func New(timeout time.Duration) *Session {
 	return &Session{
 		timeout: timeout,
@@ -36,6 +41,10 @@ func New(timeout time.Duration) *Session {
 	}
 }
 
+// Set places the data into the session, setting the timer.
+//
+// If something with the same name already exists it will be removed from the
+// storage
 func (s *Session) Set(name string, data interface{}) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -49,6 +58,7 @@ func (s *Session) Set(name string, data interface{}) {
 	go o.run(s, name)
 }
 
+// Get retrieves a value from storage, resetting the timer when it does so
 func (s *Session) Get(name string) interface{} {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -60,6 +70,7 @@ func (s *Session) Get(name string) interface{} {
 	return o.data
 }
 
+// Remove removes the named item from storage
 func (s *Session) Remove(name string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
